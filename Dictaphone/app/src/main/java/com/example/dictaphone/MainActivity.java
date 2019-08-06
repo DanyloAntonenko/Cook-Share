@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
             startAnimation();
             stopAnimation();
 
-            //HelloWorld
+            //HelloWorl
         
     }
 
