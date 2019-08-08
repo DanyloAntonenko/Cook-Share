@@ -1,10 +1,5 @@
 package com.example.dictaphone;
 
-import android.content.Context;
-import android.database.Cursor;
-import android.graphics.drawable.Animatable2;
-import android.media.MediaRecorder;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -15,8 +10,6 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.util.List;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
     ImageView smallest_line, middle_line, biggest_line;
