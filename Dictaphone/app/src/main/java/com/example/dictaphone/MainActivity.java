@@ -3,6 +3,8 @@ package com.example.dictaphone;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.Animatable2;
+import android.media.MediaRecorder;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -37,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         registerForContextMenu(biggest_line);
 
 
+
             startAnimation();
             stopAnimation();
             startAnimation();
@@ -57,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         }
         Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
         database.close();
+
     }
 
 
