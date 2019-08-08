@@ -1,6 +1,7 @@
 package com.example.dictaphone;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.drawable.Animatable2;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +44,19 @@ public class MainActivity extends AppCompatActivity {
 
             //HelloWorld
             //watafacmazafaca
-        
+
+
+        DatabaseHelper database = DatabaseHelper.getInstance(this);
+        database.open();
+
+        StringBuilder stringBuilder = new StringBuilder();
+        List<Record> records = database.getAllRecords();
+
+        for(int i = 0; i < records.size(); i++){
+            stringBuilder.append(records.get(i) + "\n");
+        }
+        Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
+        database.close();
     }
 
 
