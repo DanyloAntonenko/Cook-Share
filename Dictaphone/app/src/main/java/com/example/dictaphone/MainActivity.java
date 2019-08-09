@@ -15,6 +15,7 @@ import android.widget.Toast;
 
 import java.util.List;
 import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     ImageView smallest_line, middle_line, biggest_line, record_button_bgr;
@@ -174,6 +175,138 @@ public class MainActivity extends AppCompatActivity {
         }
         else{
             throw new IllegalArgumentException("Delay must not be less then 0.");
+        }
+    }
+    public void showControlButtons(){
+        Animation pause_button_show = AnimationUtils.loadAnimation(this, R.anim.pause_button_show);
+        pause_button.setAnimation(pause_button_show);
+
+        Animation stop_button_show = AnimationUtils.loadAnimation(this, R.anim.stop_button_show);
+        stop_button.setAnimation(stop_button_show);
+
+        Animation cancel_button_show = AnimationUtils.loadAnimation(this, R.anim.cancel_button_show);
+        cancel_button.setAnimation(cancel_button_show);
+
+        pause_button.setVisibility(View.VISIBLE);
+        stop_button.setVisibility(View.VISIBLE);
+        cancel_button.setVisibility(View.VISIBLE);
+
+    }
+
+    public void hideControlButtons(){
+        flag = 0;
+        Animation pause_button_hide = AnimationUtils.loadAnimation(this, R.anim.pause_button_hide);
+        pause_button.setAnimation(pause_button_hide);
+
+        Animation stop_button_hide = AnimationUtils.loadAnimation(this, R.anim.stop_button_hide);
+        stop_button.setAnimation(stop_button_hide);
+
+        Animation cancel_button_hide = AnimationUtils.loadAnimation(this, R.anim.cancel_button_hide);
+        cancel_button.setAnimation(cancel_button_hide);
+
+        pause_button.setBackgroundResource(R.drawable.pause);
+
+        pause_button.setVisibility(View.INVISIBLE);
+        stop_button.setVisibility(View.INVISIBLE);
+        cancel_button.setVisibility(View.INVISIBLE);
+    }
+
+    public void showRecordButton(){
+        Animation animation = new AlphaAnimation(0, 1);
+        animation.setDuration(1000);
+
+        record_button.setAnimation(animation);
+        record_button_bgr.setAnimation(animation);
+
+        record_button.setVisibility(View.VISIBLE);
+        record_button_bgr.setVisibility(View.VISIBLE);
+    }
+
+    public void hideRecordButton(){
+        Animation animation = new AlphaAnimation(1, 0);
+        animation.setDuration(1000);
+
+        record_button.setAnimation(animation);
+        record_button_bgr.setAnimation(animation);
+
+        record_button_bgr.setVisibility(View.INVISIBLE);
+        record_button.setVisibility(View.INVISIBLE);
+    }
+
+    public void startTimer(){
+        timer = new Timer();
+        myTymer = new MyTymer();
+        timer.schedule(myTymer, 1000, 1000);
+
+    }
+
+    public void pauseTimer(){
+        if(timer != null){
+            timer.cancel();
+            timer = null;
+
+            Animation timer_text_blink =  AnimationUtils.loadAnimation(this, R.anim.timer_text_blink);
+            timer_text.setAnimation(timer_text_blink);
+        }
+    }
+
+    public void resumeTimer(){
+        if(timer == null) {
+            timer = new Timer();
+
+            int seconds = myTymer.seconds;
+            int minutes = myTymer.minutes;
+
+            myTymer = new MyTymer();
+            myTymer.seconds = seconds;
+            myTymer.minutes = minutes;
+
+            timer.schedule(myTymer, 1000, 1000);
+
+            if(timer_text.getAnimation() != null){
+                timer_text.clearAnimation();
+            }
+        }
+    }
+
+    public void stopTimer(){
+        if(timer != null){
+            timer.cancel();
+        }
+        timer = null;
+
+        if(myTymer != null){
+            myTymer.cancel();
+        }
+        myTymer = null;
+
+        if(timer_text.getAnimation() != null) {
+            timer_text.clearAnimation();
+        }
+
+    }
+
+    class MyTymer extends TimerTask {
+        int seconds = 0;
+        int minutes = 0;
+        @Override
+        public void run() {
+            seconds++;
+            minutes = seconds/60;
+
+            int seconds_formatted = seconds%60;
+            int minutes_formatted = minutes%60;
+
+            final String time = ((minutes_formatted < 10) ? "0" + String.valueOf(minutes_formatted) : String.valueOf(minutes_formatted)) +
+                    ":" +
+                    ((seconds_formatted < 10) ? "0" + String.valueOf(seconds_formatted):String.valueOf(seconds_formatted));
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    timer_text.setText(time);
+                }
+            });
         }
     }
 
