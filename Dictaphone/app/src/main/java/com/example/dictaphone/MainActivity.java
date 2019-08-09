@@ -1,6 +1,9 @@
 package com.example.dictaphone;
 
 import android.annotation.SuppressLint;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -13,6 +16,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,6 +31,17 @@ public class MainActivity extends AppCompatActivity {
     short flag = 0;
     Timer timer;
     MyTymer myTymer;
+
+
+
+    //////////////////////////////
+    private static final int recorder_samplerate = 8000;
+    private static final int recorder_chanels = AudioFormat.CHANNEL_IN_MONO;
+    private static final int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
+    private AudioRecord recorder = null;
+    private Thread recordingThread = null;
+    private boolean isRecording = false;
+    /////////////////////////////
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -280,6 +297,86 @@ public class MainActivity extends AppCompatActivity {
             timer_text.clearAnimation();
         }
 
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    //ПРОВЕРИТЬ РАББОТУ
+    ///////////////////////////////////////////////////////////////////////////////////////
+    int buffer_element_to_rec = 1024; // want to play 2048 (2K) since 2 bytes we use only 1024
+    int bytes_per_element = 2;
+
+    private void startRecording() {
+
+        recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                recorder_samplerate, recorder_chanels,
+                recorder_audio_encoding, buffer_element_to_rec * bytes_per_element);
+
+        recorder.startRecording();
+        isRecording = true;
+        recordingThread = new Thread(new Runnable() {
+            public void run() {
+                writeAudioDataToFile();
+            }
+        }, "AudioRecorder Thread");
+        recordingThread.start();
+    }
+
+    //convert short to byte
+    private byte[] short2byte(short[] sData) {
+        int shortArrsize = sData.length;
+        byte[] bytes = new byte[shortArrsize * 2];
+        for (int i = 0; i < shortArrsize; i++) {
+            bytes[i * 2] = (byte) (sData[i] & 0x00FF);
+            bytes[(i * 2) + 1] = (byte) (sData[i] >> 8);
+            sData[i] = 0;
+        }
+        return bytes;
+
+    }
+
+    private void writeAudioDataToFile() {
+        // Write the output audio in byte
+
+        String filePath = "/sdcard/voice8K16bitmono.pcm";
+        short sData[] = new short[buffer_element_to_rec];
+
+        FileOutputStream os = null;
+        try {
+            os = new FileOutputStream(filePath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        while (isRecording) {
+            // gets the voice output from microphone to byte format
+
+            recorder.read(sData, 0, buffer_element_to_rec);
+            System.out.println("Short wirting to file" + sData.toString());
+            try {
+                // // writes the data to file from buffer
+                // // stores the voice buffer
+                byte bData[] = short2byte(sData);
+                os.write(bData, 0, buffer_element_to_rec * bytes_per_element);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            os.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void stopRecording() {
+        // stops the recording activity
+        if (null != recorder) {
+            isRecording = false;
+            recorder.stop();
+            recorder.release();
+            recorder = null;
+            recordingThread = null;
+        }
     }
 
     class MyTymer extends TimerTask {
