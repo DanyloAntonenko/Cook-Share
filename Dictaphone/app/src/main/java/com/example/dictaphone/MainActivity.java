@@ -127,10 +127,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-
-
-
     public void startAnimation(){
         if(smallest_line.getAnimation() == null){
 
