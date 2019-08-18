@@ -1,9 +1,9 @@
 package com.example.dictaphone;
 
 import android.annotation.SuppressLint;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
+import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MotionEvent;
@@ -16,40 +16,49 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
-    ImageView smallest_line, middle_line, biggest_line, record_button_bgr;
-    Button record_button, pause_button, stop_button, cancel_button;
-    TextView timer_text;
+    private ImageView smallest_line, middle_line, biggest_line, record_button_bgr;
+    Button record_button,
+            pause_button, stop_button, cancel_button,
+            play_sound_button, pause_sound_button;
+    private TextView timer_text;
 
-    short flag = 0;
-    Timer timer;
-    MyTymer myTymer;
+    private short flag = 0;
+    private Timer timer;
+    private MyTymer myTymer;
 
+    private MediaRecorder media_recorder;
+    private MediaPlayer media_player;
+    String file_name, storage_dir;
 
-
-    //////////////////////////////
-    private static final int recorder_samplerate = 8000;
-    private static final int recorder_chanels = AudioFormat.CHANNEL_IN_MONO;
-    private static final int recorder_audio_encoding = AudioFormat.ENCODING_PCM_16BIT;
-    private AudioRecord recorder = null;
-    private Thread recordingThread = null;
-    private boolean isRecording = false;
-    /////////////////////////////
-
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint({"ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        timer_text = findViewById(R.id.timer_text);
+        play_sound_button = findViewById(R.id.play_sound_button);
+        play_sound_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startPlaying();
+            }
+        });
+
+        pause_sound_button = findViewById(R.id.pause_sound_button);
+        pause_sound_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopPlaying();
+            }
+        });
+
+        timer_text  = findViewById(R.id.timer_text);
 
         pause_button = findViewById(R.id.pause_button);
         pause_button.setOnClickListener(new View.OnClickListener() {
@@ -74,10 +83,13 @@ public class MainActivity extends AppCompatActivity {
         stop_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                stopRecording();
+                stopTimer();
+
                 stopAnimation();
                 showRecordButton();
                 hideControlButtons();
-                stopTimer();
+
 
             }
         });
@@ -90,21 +102,23 @@ public class MainActivity extends AppCompatActivity {
                 showRecordButton();
                 hideControlButtons();
                 stopTimer();
+                stopRecording();
             }
         });
 
 
         record_button_bgr = findViewById(R.id.record_button_bgr);
-
         record_button = findViewById(R.id.record_button);
         record_button.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if(event.getAction() == MotionEvent.ACTION_DOWN){
+                    startRecording();
+                    startTimer();
+
                     startAnimation();
                     showControlButtons();
                     hideRecordButton();
-                    startTimer();
                 }
                 return false;
             }
@@ -139,8 +153,15 @@ public class MainActivity extends AppCompatActivity {
         for(int i = 0; i < records.size(); i++){
             stringBuilder.append(records.get(i) + "\n");
         }
-        Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
+       // Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
         database.close();
+
+        storage_dir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/";
+        file_name = storage_dir + "record.3gpp";
+        File storage_file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/");
+        if(!storage_file.exists()){
+            storage_file.mkdirs();
+        }
 
     }
 
@@ -299,84 +320,77 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    //ПРОВЕРИТЬ РАББОТУ
-    ///////////////////////////////////////////////////////////////////////////////////////
-    int buffer_element_to_rec = 1024; // want to play 2048 (2K) since 2 bytes we use only 1024
-    int bytes_per_element = 2;
+    public void startRecording(){
+        try{
+            releaseRecorder();
 
-    private void startRecording() {
-
-        recorder = new AudioRecord(MediaRecorder.AudioSource.MIC,
-                recorder_samplerate, recorder_chanels,
-                recorder_audio_encoding, buffer_element_to_rec * bytes_per_element);
-
-        recorder.startRecording();
-        isRecording = true;
-        recordingThread = new Thread(new Runnable() {
-            public void run() {
-                writeAudioDataToFile();
+            File out_file = new File(file_name);
+            if(out_file.exists()){
+                out_file.delete();
             }
-        }, "AudioRecorder Thread");
-        recordingThread.start();
+
+            media_recorder = new MediaRecorder();
+            media_recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            media_recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            media_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.HE_AAC);
+            media_recorder.setAudioEncodingBitRate(16 * 44100);
+            media_recorder.setAudioSamplingRate(44100);
+            media_recorder.setOutputFile(file_name);
+            media_recorder.prepare();
+            media_recorder.start();
+
+
+
+        }catch (Exception e){
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+
     }
 
-    //convert short to byte
-    private byte[] short2byte(short[] sData) {
-        int shortArrsize = sData.length;
-        byte[] bytes = new byte[shortArrsize * 2];
-        for (int i = 0; i < shortArrsize; i++) {
-            bytes[i * 2] = (byte) (sData[i] & 0x00FF);
-            bytes[(i * 2) + 1] = (byte) (sData[i] >> 8);
-            sData[i] = 0;
-        }
-        return bytes;
-
-    }
-
-    private void writeAudioDataToFile() {
-        // Write the output audio in byte
-
-        String filePath = "/sdcard/voice8K16bitmono.pcm";
-        short sData[] = new short[buffer_element_to_rec];
-
-        FileOutputStream os = null;
-        try {
-            os = new FileOutputStream(filePath);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        while (isRecording) {
-            // gets the voice output from microphone to byte format
-
-            recorder.read(sData, 0, buffer_element_to_rec);
-            System.out.println("Short wirting to file" + sData.toString());
-            try {
-                // // writes the data to file from buffer
-                // // stores the voice buffer
-                byte bData[] = short2byte(sData);
-                os.write(bData, 0, buffer_element_to_rec * bytes_per_element);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            os.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void stopRecording() {
+        if(media_recorder != null){
+            media_recorder.stop();
         }
     }
 
-    private void stopRecording() {
-        // stops the recording activity
-        if (null != recorder) {
-            isRecording = false;
-            recorder.stop();
-            recorder.release();
-            recorder = null;
-            recordingThread = null;
+    public void startPlaying(){
+        try{
+            releasePlayer();
+            media_player = new MediaPlayer();
+            media_player.setDataSource(file_name);
+            media_player.prepare();
+            media_player.start();
+        }catch (Exception e){
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         }
+
+    }
+
+    public void stopPlaying(){
+        if(media_player != null){
+            media_player.stop();
+        }
+    }
+
+    public void releaseRecorder(){
+        if(media_recorder != null){
+            media_recorder.release();
+            media_recorder = null;
+        }
+    }
+
+    public void releasePlayer(){
+        if(media_player != null){
+            media_player.release();
+            media_player = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        releaseRecorder();
+        releaseRecorder();
     }
 
     class MyTymer extends TimerTask {
