@@ -1,17 +1,19 @@
 package com.example.dictaphone;
 
-import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Environment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,9 +36,8 @@ public class MainActivity extends AppCompatActivity {
 
     private MediaRecorder media_recorder;
     private MediaPlayer media_player;
-    String file_name, storage_dir;
+    String file_name; File storage_dir;
 
-    @SuppressLint({"ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,8 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 stopAnimation();
                 showRecordButton();
                 hideControlButtons();
-
-
+                renameFile();
             }
         });
 
@@ -109,20 +109,18 @@ public class MainActivity extends AppCompatActivity {
 
         record_button_bgr = findViewById(R.id.record_button_bgr);
         record_button = findViewById(R.id.record_button);
-        record_button.setOnTouchListener(new View.OnTouchListener() {
+        record_button .setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN){
-                    startRecording();
-                    startTimer();
+            public void onClick(View v) {
+                startRecording();
+                startTimer();
 
-                    startAnimation();
-                    showControlButtons();
-                    hideRecordButton();
-                }
-                return false;
+                startAnimation();
+                showControlButtons();
+                hideRecordButton();
             }
         });
+
 
         smallest_line = findViewById(R.id.smallest_line);
         middle_line = findViewById(R.id.middle_line);
@@ -156,11 +154,10 @@ public class MainActivity extends AppCompatActivity {
        // Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
         database.close();
 
-        storage_dir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/";
-        file_name = storage_dir + "record.3gpp";
-        File storage_file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/");
-        if(!storage_file.exists()){
-            storage_file.mkdirs();
+        storage_dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/");
+        file_name = "/record.3gpp";
+        if(!storage_dir.exists()){
+            storage_dir.mkdirs();
         }
 
     }
@@ -324,7 +321,7 @@ public class MainActivity extends AppCompatActivity {
         try{
             releaseRecorder();
 
-            File out_file = new File(file_name);
+            File out_file = new File(storage_dir + file_name);
             if(out_file.exists()){
                 out_file.delete();
             }
@@ -335,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
             media_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.HE_AAC);
             media_recorder.setAudioEncodingBitRate(16 * 44100);
             media_recorder.setAudioSamplingRate(44100);
-            media_recorder.setOutputFile(file_name);
+            media_recorder.setOutputFile(storage_dir + file_name);
             media_recorder.prepare();
             media_recorder.start();
 
@@ -357,7 +354,7 @@ public class MainActivity extends AppCompatActivity {
         try{
             releasePlayer();
             media_player = new MediaPlayer();
-            media_player.setDataSource(file_name);
+            media_player.setDataSource(storage_dir + file_name);
             media_player.prepare();
             media_player.start();
         }catch (Exception e){
@@ -384,6 +381,57 @@ public class MainActivity extends AppCompatActivity {
             media_player.release();
             media_player = null;
         }
+    }
+
+    public void renameFile(){
+        View prompts = LayoutInflater.from(this).inflate(R.layout.enter_file_name_dialog_window, null);
+        AlertDialog.Builder alert_dialog = new AlertDialog.Builder(this);
+        alert_dialog.setView(prompts);
+
+        final EditText user_input = prompts.findViewById(R.id.input_text);
+
+        alert_dialog.setCancelable(false);
+        alert_dialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                changeFileName(file_name, user_input.getText().toString());
+                Toast.makeText(getBaseContext(), "File name has successfully been changed to " + user_input.getText(), Toast.LENGTH_LONG).show();
+            }
+        });
+        alert_dialog.setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        AlertDialog dialog = alert_dialog.create();
+        dialog.show();
+
+    }
+
+    public void changeFileName(String file_name_old, String file_name_new){
+        try {
+            if(!storage_dir.exists()) {
+                storage_dir.mkdirs();
+            }
+
+            File from = new File(storage_dir, file_name_old);
+            File to = new File(storage_dir, file_name_new.trim() + ".3gpp");
+            if (from.exists()) {
+                from.renameTo(to);
+            } else {
+                throw new Exception("Temporary file does not exist");
+            }
+
+        }catch (Exception e){
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+
+    }
+
+    public void deleteRecord(String file_name){
+
     }
 
     @Override
