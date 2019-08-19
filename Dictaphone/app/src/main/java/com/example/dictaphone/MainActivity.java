@@ -19,24 +19,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private ImageView smallest_line, middle_line, biggest_line, record_button_bgr;
-    Button record_button,
+    Button  record_button,
             pause_button, stop_button, cancel_button,
             play_sound_button, pause_sound_button;
     private TextView timer_text;
 
-    private short flag = 0;
+
     private Timer timer;
     private MyTymer myTymer;
-
     private MediaRecorder media_recorder;
     private MediaPlayer media_player;
+
     String file_name; File storage_dir;
+    private short flag = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
                 hideControlButtons();
                 stopTimer();
                 stopRecording();
+                deleteRecord(file_name);
             }
         });
 
@@ -319,12 +322,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void startRecording(){
         try{
-            releaseRecorder();
-
+            file_name = getTemporaryFileName();
             File out_file = new File(storage_dir + file_name);
-            if(out_file.exists()){
-                out_file.delete();
+            while (out_file.exists()){
+                file_name = getTemporaryFileName();
+                out_file = new File(storage_dir + file_name);
             }
+
+            releaseRecorder();
 
             media_recorder = new MediaRecorder();
             media_recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -384,54 +389,86 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void renameFile(){
+
         View prompts = LayoutInflater.from(this).inflate(R.layout.enter_file_name_dialog_window, null);
-        AlertDialog.Builder alert_dialog = new AlertDialog.Builder(this);
+
+        final AlertDialog.Builder alert_dialog = new AlertDialog.Builder(this);
         alert_dialog.setView(prompts);
+        alert_dialog.setCancelable(false);
 
         final EditText user_input = prompts.findViewById(R.id.input_text);
+        user_input.setText(file_name.substring(1, file_name.length() - 5));
 
-        alert_dialog.setCancelable(false);
-        alert_dialog.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+        Button save_file_name_button = prompts.findViewById(R.id.save_file_name_button);
+        Button cancel_file_name_button = prompts.findViewById(R.id.cancel_file_name_button);
+
+        final AlertDialog dialog = alert_dialog.create();
+
+        save_file_name_button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
-                changeFileName(file_name, user_input.getText().toString());
-                Toast.makeText(getBaseContext(), "File name has successfully been changed to " + user_input.getText(), Toast.LENGTH_LONG).show();
+            public void onClick(View v) {
+                if(!file_name.substring(1, file_name.length() - 5).equals(user_input.getText().toString()) && !user_input.getText().toString().isEmpty()) {
+                    changeFileName(file_name, user_input.getText().toString());
+                }
+                dialog.dismiss();
             }
         });
-        alert_dialog.setNegativeButton("Отмена", new DialogInterface.OnClickListener() {
+
+        cancel_file_name_button.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
+            public void onClick(View v) {
+                deleteRecord(file_name);
+                dialog.dismiss();
             }
         });
 
-        AlertDialog dialog = alert_dialog.create();
         dialog.show();
-
     }
 
     public void changeFileName(String file_name_old, String file_name_new){
         try {
-            if(!storage_dir.exists()) {
-                storage_dir.mkdirs();
-            }
+            if(storage_dir.exists()) {
 
-            File from = new File(storage_dir, file_name_old);
-            File to = new File(storage_dir, file_name_new.trim() + ".3gpp");
-            if (from.exists()) {
-                from.renameTo(to);
-            } else {
-                throw new Exception("Temporary file does not exist");
+                File from = new File(storage_dir, file_name_old);
+                File to = new File(storage_dir, file_name_new.trim() + ".3gpp");
+                if (from.exists()) {
+                    from.renameTo(to);
+                } else {
+                    throw new Exception("Temporary file does not exist");
+                }
             }
-
         }catch (Exception e){
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
     }
 
-    public void deleteRecord(String file_name){
+    public String getTemporaryFileName(){
+        String symbols = "ABCDEFGJKLMNPRSTUVWXYZabcdefgjklmnrpstuvwxyz01234567890";
+        SecureRandom random = new SecureRandom();
+        StringBuilder string_builder = new StringBuilder("/");
 
+        for(int i = 0; i < 20; i++){
+            string_builder.append(symbols.charAt(random.nextInt(symbols.length())));
+        }
+
+        string_builder.append(".3gpp");
+
+        return string_builder.toString();
+    }
+
+    public void deleteRecord(String file){
+        try{
+            File f = new File(storage_dir + file);
+            if(f.delete()){
+                Toast.makeText(this, "File deleted successfully", Toast.LENGTH_LONG).show();
+            }
+            else{
+                Toast.makeText(this, "File delete failed", Toast.LENGTH_LONG).show();
+            }
+        }catch (Exception e){
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
