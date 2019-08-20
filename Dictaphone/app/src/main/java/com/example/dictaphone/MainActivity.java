@@ -18,8 +18,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.coremedia.iso.boxes.Container;
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.authoring.Track;
+import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
+import com.googlecode.mp4parser.authoring.container.mp4.MovieCreator;
+import com.googlecode.mp4parser.authoring.tracks.AppendTrack;
+
 import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -39,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     String file_name; File storage_dir;
     private short flag = 0;
+
+    String[] audio_parts;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,11 +85,17 @@ public class MainActivity extends AppCompatActivity {
                     pauseTimer();
                     pause_button.setBackgroundResource(R.drawable.play);
                     flag++;
+
+
+                    pauseRecording();
                 }else if(flag == 1){
                     startAnimation();
                     resumeTimer();
                     pause_button.setBackgroundResource(R.drawable.pause);
                     flag--;
+
+
+                    resumeRecording();
                 }
 
             }
@@ -89,10 +108,15 @@ public class MainActivity extends AppCompatActivity {
                 stopRecording();
                 stopTimer();
 
+
+                mergeRecords(true, audio_parts, storage_dir + file_name);
+
                 stopAnimation();
                 showRecordButton();
                 hideControlButtons();
                 renameFile();
+
+                audio_parts = null;
             }
         });
 
@@ -152,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         List<Record> records = database.getAllRecords();
 
         for(int i = 0; i < records.size(); i++){
-            stringBuilder.append(records.get(i) + "\n");
+            stringBuilder.append(records.get(i)).append("\n");
         }
        // Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
         database.close();
@@ -211,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
             throw new IllegalArgumentException("Delay must not be less then 0.");
         }
     }
+
     public void showControlButtons(){
         Animation pause_button_show = AnimationUtils.loadAnimation(this, R.anim.pause_button_show);
         pause_button.setAnimation(pause_button_show);
@@ -329,6 +354,8 @@ public class MainActivity extends AppCompatActivity {
                 out_file = new File(storage_dir + file_name);
             }
 
+            addToAudioParts(storage_dir + file_name);
+
             releaseRecorder();
 
             media_recorder = new MediaRecorder();
@@ -346,7 +373,6 @@ public class MainActivity extends AppCompatActivity {
         }catch (Exception e){
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
         }
-
     }
 
     public void stopRecording() {
@@ -438,7 +464,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }catch (Exception e){
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Renaming file problem", Toast.LENGTH_LONG).show();
         }
 
     }
@@ -468,6 +494,63 @@ public class MainActivity extends AppCompatActivity {
             }
         }catch (Exception e){
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void pauseRecording(){
+        stopRecording();
+    }
+
+    public void resumeRecording(){
+        startRecording();
+    }
+
+    public void addToAudioParts(String value){
+        if(audio_parts == null){
+            audio_parts = new String[1];
+            audio_parts[0] = value;
+        } else {
+            String[] temp = new String[audio_parts.length + 1];
+            for (int i = 0; i < audio_parts.length; i++) {
+                temp[i] = audio_parts[i];
+            }
+            temp[temp.length - 1] = value;
+            audio_parts = temp;
+        }
+    }
+
+
+    public boolean mergeRecords(boolean is_audio, String source_files[], String target_file){
+        try{
+            String media_key = is_audio ? "soun" : "vide";
+            List<Movie> list_movies = new ArrayList<>();
+            for(String filename : source_files){
+                list_movies.add(MovieCreator.build(filename));
+            }
+
+            List<Track> list_tracks = new LinkedList<>();
+            for(Movie movie : list_movies){
+                for(Track track : list_tracks){
+                    if(track.getHandler().equals(media_key)){
+                        list_tracks.add(track);
+                    }
+                }
+            }
+
+            Movie output_movie = new Movie();
+            if(!list_tracks.isEmpty()){
+                output_movie.addTrack(new AppendTrack(list_tracks.toArray(new Track[list_tracks.size()])));
+            }
+
+            Container container = new DefaultMp4Builder().build(output_movie);
+            FileChannel file_channel = new RandomAccessFile(String.format(target_file), "rw").getChannel();
+            container.writeContainer(file_channel);
+            file_channel.close();
+            return true;
+
+        }catch (Exception e){
+            Toast.makeText(this, "Error merging files", Toast.LENGTH_LONG).show();
+            return false;
         }
     }
 
