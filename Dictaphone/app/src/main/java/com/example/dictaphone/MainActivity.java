@@ -80,21 +80,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if(flag == 0){
+
+                    pauseRecording();
                     stopAnimation();
                     pauseTimer();
                     pause_button.setBackgroundResource(R.drawable.play);
                     flag++;
-
-
-                    pauseRecording();
                 }else if(flag == 1){
+
+                    resumeRecording();
                     startAnimation();
                     resumeTimer();
                     pause_button.setBackgroundResource(R.drawable.pause);
                     flag--;
-
-
-                    resumeRecording();
                 }
 
             }
@@ -112,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
                     mergeRecords(true, audio_parts, storage_dir + file_name);
                     deleteTemporaryFiles();
                 }
-
 
                 stopAnimation();
                 showRecordButton();
@@ -132,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 hideControlButtons();
                 stopTimer();
                 stopRecording();
+
                 if(audio_parts == null || audio_parts.length == 1){
                     deleteRecord(storage_dir + file_name);
                 }
