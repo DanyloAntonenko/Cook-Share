@@ -1,6 +1,5 @@
 package com.example.dictaphone;
 
-import android.content.DialogInterface;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.os.Environment;
@@ -108,8 +107,12 @@ public class MainActivity extends AppCompatActivity {
                 stopRecording();
                 stopTimer();
 
+                if(audio_parts != null && audio_parts.length >= 2) {
+                    file_name = getTemporaryFileName();
+                    mergeRecords(true, audio_parts, storage_dir + file_name);
+                    deleteTemporaryFiles();
+                }
 
-                mergeRecords(true, audio_parts, storage_dir + file_name);
 
                 stopAnimation();
                 showRecordButton();
@@ -129,7 +132,13 @@ public class MainActivity extends AppCompatActivity {
                 hideControlButtons();
                 stopTimer();
                 stopRecording();
-                deleteRecord(file_name);
+                if(audio_parts == null || audio_parts.length == 1){
+                    deleteRecord(storage_dir + file_name);
+                }
+                else {
+                    deleteTemporaryFiles();
+                }
+                audio_parts = null;
             }
         });
 
@@ -378,6 +387,7 @@ public class MainActivity extends AppCompatActivity {
     public void stopRecording() {
         if(media_recorder != null){
             media_recorder.stop();
+            releaseRecorder();
         }
     }
 
@@ -443,7 +453,7 @@ public class MainActivity extends AppCompatActivity {
         cancel_file_name_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                deleteRecord(file_name);
+                deleteRecord(storage_dir + file_name);
                 dialog.dismiss();
             }
         });
@@ -485,7 +495,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void deleteRecord(String file){
         try{
-            File f = new File(storage_dir + file);
+            File f = new File(file);
             if(f.delete()){
                 Toast.makeText(this, "File deleted successfully", Toast.LENGTH_LONG).show();
             }
@@ -519,8 +529,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void deleteTemporaryFiles(){
+        if(audio_parts != null && audio_parts.length >= 2){
+            for(int i = 0; i < audio_parts.length; i++){
+                deleteRecord(audio_parts[i]);
+            }
+        }
+    }
 
-    public boolean mergeRecords(boolean is_audio, String source_files[], String target_file){
+    public void mergeRecords(boolean is_audio, String source_files[], String target_file){
         try{
             String media_key = is_audio ? "soun" : "vide";
             List<Movie> list_movies = new ArrayList<>();
@@ -530,7 +547,7 @@ public class MainActivity extends AppCompatActivity {
 
             List<Track> list_tracks = new LinkedList<>();
             for(Movie movie : list_movies){
-                for(Track track : list_tracks){
+                for(Track track : movie.getTracks()){
                     if(track.getHandler().equals(media_key)){
                         list_tracks.add(track);
                     }
@@ -546,11 +563,9 @@ public class MainActivity extends AppCompatActivity {
             FileChannel file_channel = new RandomAccessFile(String.format(target_file), "rw").getChannel();
             container.writeContainer(file_channel);
             file_channel.close();
-            return true;
 
         }catch (Exception e){
             Toast.makeText(this, "Error merging files", Toast.LENGTH_LONG).show();
-            return false;
         }
     }
 
