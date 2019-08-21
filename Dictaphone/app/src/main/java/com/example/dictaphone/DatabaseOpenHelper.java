@@ -4,7 +4,6 @@ import android.content.Context;
 
 import com.readystatesoftware.sqliteasset.SQLiteAssetHelper;
 
-
 public class DatabaseOpenHelper extends SQLiteAssetHelper {
     private static final String db_name = "dictaphone.db";
     private static final int db_version = 1;

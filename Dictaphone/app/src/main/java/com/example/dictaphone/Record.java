@@ -52,7 +52,6 @@ public class Record {
     }
 
     public String toString(){
-
         return String.valueOf(id) + ": " + name + ", " + String.valueOf(duration) + "\t" + date;
     }
 }

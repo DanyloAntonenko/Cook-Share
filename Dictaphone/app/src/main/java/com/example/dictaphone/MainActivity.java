@@ -389,6 +389,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void pauseRecording(){
+        stopRecording();
+    }
+
+    public void resumeRecording(){
+        startRecording();
+    }
+
     public void startPlaying(){
         try{
             releasePlayer();
@@ -491,50 +499,6 @@ public class MainActivity extends AppCompatActivity {
         return string_builder.toString();
     }
 
-    public void deleteRecord(String file){
-        try{
-            File f = new File(file);
-            if(f.delete()){
-                Toast.makeText(this, "File deleted successfully", Toast.LENGTH_LONG).show();
-            }
-            else{
-                Toast.makeText(this, "File delete failed", Toast.LENGTH_LONG).show();
-            }
-        }catch (Exception e){
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    public void pauseRecording(){
-        stopRecording();
-    }
-
-    public void resumeRecording(){
-        startRecording();
-    }
-
-    public void addToAudioParts(String value){
-        if(audio_parts == null){
-            audio_parts = new String[1];
-            audio_parts[0] = value;
-        } else {
-            String[] temp = new String[audio_parts.length + 1];
-            for (int i = 0; i < audio_parts.length; i++) {
-                temp[i] = audio_parts[i];
-            }
-            temp[temp.length - 1] = value;
-            audio_parts = temp;
-        }
-    }
-
-    public void deleteTemporaryFiles(){
-        if(audio_parts != null && audio_parts.length >= 2){
-            for(int i = 0; i < audio_parts.length; i++){
-                deleteRecord(audio_parts[i]);
-            }
-        }
-    }
-
     public void mergeRecords(boolean is_audio, String source_files[], String target_file){
         try{
             String media_key = is_audio ? "soun" : "vide";
@@ -564,6 +528,42 @@ public class MainActivity extends AppCompatActivity {
 
         }catch (Exception e){
             Toast.makeText(this, "Error merging files", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void deleteRecord(String file){
+        try{
+            File f = new File(file);
+            if(f.delete()){
+                Toast.makeText(this, "File deleted successfully", Toast.LENGTH_LONG).show();
+            }
+            else{
+                Toast.makeText(this, "File delete failed", Toast.LENGTH_LONG).show();
+            }
+        }catch (Exception e){
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void deleteTemporaryFiles(){
+        if(audio_parts != null && audio_parts.length >= 2){
+            for(int i = 0; i < audio_parts.length; i++){
+                deleteRecord(audio_parts[i]);
+            }
+        }
+    }
+
+    public void addToAudioParts(String value){
+        if(audio_parts == null){
+            audio_parts = new String[1];
+            audio_parts[0] = value;
+        } else {
+            String[] temp = new String[audio_parts.length + 1];
+            for (int i = 0; i < audio_parts.length; i++) {
+                temp[i] = audio_parts[i];
+            }
+            temp[temp.length - 1] = value;
+            audio_parts = temp;
         }
     }
 
@@ -597,5 +597,4 @@ public class MainActivity extends AppCompatActivity {
             });
         }
     }
-
 }
