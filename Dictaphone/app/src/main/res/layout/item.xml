@@ -8,7 +8,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@android:color/darker_gray"
+        android:background="@drawable/record_background"
+
         >
 
         <RelativeLayout
@@ -40,6 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
+            android:layout_marginBottom="8dp"
             android:padding="2dp"
             >
             <Button
@@ -48,7 +50,6 @@
                 android:background="@drawable/play_record_button"
                 android:layout_alignParentStart="true"
                 android:layout_centerVertical="true"
-
                 />
 
             <SeekBar
@@ -58,8 +59,13 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="50dp"
-                android:layout_marginEnd="50dp"/>
+                android:layout_marginEnd="50dp"
+                android:thumbTint="#cd88a9"
+                android:maxHeight="3dp"
+                android:maxWidth="3dp"
+                android:progressDrawable="@drawable/seekbar_bgr"
 
+                />
             <TextView
                 android:id="@+id/record_duration"
                 android:layout_width="wrap_content"

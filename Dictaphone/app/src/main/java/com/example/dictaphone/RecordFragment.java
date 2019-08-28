@@ -47,8 +47,7 @@ public class RecordFragment extends Fragment {
 
     private ImageView smallest_line, middle_line, biggest_line, record_button_bgr;
     Button record_button,
-            pause_button, stop_button, cancel_button,
-            play_sound_button, pause_sound_button;
+            pause_button, stop_button, cancel_button;
     private TextView timer_text;
     /////////////////////////////////////////////////////////
     ListView list_of_records;
@@ -64,12 +63,11 @@ public class RecordFragment extends Fragment {
     private Timer timer;
     private MyTymer myTymer;
     public MediaRecorder media_recorder;
-    private MediaPlayer media_player;
 
-    String file_name; File storage_dir;
+    private String file_name; File storage_dir;
     private short flag = 0;
 
-    String[] audio_parts;
+    private String[] audio_parts;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -93,18 +91,8 @@ public class RecordFragment extends Fragment {
         setVisibilities();
         registerForContext();
 
-
-
         DatabaseHelper database = DatabaseHelper.getInstance(context);
         database.open();
-
-        StringBuilder stringBuilder = new StringBuilder();
-        List<Record> records = database.getAllRecords();
-
-        for(int i = 0; i < records.size(); i++){
-            stringBuilder.append(records.get(i)).append("\n");
-        }
-        // Toast.makeText(this, stringBuilder, Toast.LENGTH_LONG).show();
         database.close();
 
         storage_dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Records/");
@@ -123,9 +111,6 @@ public class RecordFragment extends Fragment {
         pause_button = getView().findViewById(R.id.pause_button);
         stop_button = getView().findViewById(R.id.stop_button);
         cancel_button = getView().findViewById(R.id.cancel_button);
-
-        play_sound_button = getView().findViewById(R.id.play_sound_button);
-        pause_sound_button = getView().findViewById(R.id.pause_sound_button);
 
         smallest_line = getView().findViewById(R.id.smallest_line);
         middle_line = getView().findViewById(R.id.middle_line);
@@ -211,23 +196,6 @@ public class RecordFragment extends Fragment {
                 audio_parts = null;
 
                 MainActivity.view_pager.disableScroll(false);
-            }
-        });
-
-        play_sound_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //startPlaying();
-                // Intent i = new Intent(MainActivity.this, ShowRecordsFragment.class);
-                //startActivityForResult(i, 1);
-            }
-        });
-
-        pause_sound_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                //stopPlaying();
             }
         });
 
@@ -454,36 +422,10 @@ public class RecordFragment extends Fragment {
         startRecording();
     }
 
-    public void startPlaying(){
-        try{
-            releasePlayer();
-            media_player = new MediaPlayer();
-            media_player.setDataSource(storage_dir + file_name);
-            media_player.prepare();
-            media_player.start();
-        }catch (Exception e){
-            Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-
-    }
-
-    public void stopPlaying(){
-        if(media_player != null){
-            media_player.stop();
-        }
-    }
-
     public void releaseRecorder(){
         if(media_recorder != null){
             media_recorder.release();
             media_recorder = null;
-        }
-    }
-
-    public void releasePlayer(){
-        if(media_player != null){
-            media_player.release();
-            media_player = null;
         }
     }
 
