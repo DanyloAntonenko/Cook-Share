@@ -49,12 +49,9 @@ public class ShowRecordsFragment extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         data = new ArrayList<>();
-        try {
-            database = DatabaseHelper.getInstance(context);
-            database.open();
-        } catch (Exception e){
-            Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
-        }
+
+        database = DatabaseHelper.getInstance(context);
+        database.open();
 
         String[] from = {attribute_name, attribute_date, attribute_duration};
         int[] to = {R.id.record_name, R.id.record_date, R.id.record_duration};
@@ -110,10 +107,6 @@ public class ShowRecordsFragment extends Fragment {
         }
     }
 
-    public void showRecord(){
-
-    }
-
     public void showAllRecords() throws NullPointerException{
         try {
             if (database == null) {
@@ -151,6 +144,12 @@ public class ShowRecordsFragment extends Fragment {
                 .concat(":")
                 .concat((seconds < 10) ? "0" +  String.valueOf(seconds) : String.valueOf(seconds));
     }
+
+
+
+
+
+
 
     @Override
     public void onDestroy() {

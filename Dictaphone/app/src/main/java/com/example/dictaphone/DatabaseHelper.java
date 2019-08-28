@@ -39,7 +39,7 @@ public class DatabaseHelper {
     }
 
     public List<Record> getAllRecords(){
-        Cursor cursor = database.rawQuery("SELECT * FROM records", null);
+        Cursor cursor = database.rawQuery("SELECT * FROM " + table_name, null);
 
         List<Record> records = new ArrayList<>();
         cursor.moveToFirst();
@@ -77,6 +77,19 @@ public class DatabaseHelper {
         contentValues.put(key_date, record.getDate());
 
         database.update(table_name, contentValues, key_id + "=?", new String[]{String.valueOf(record.getId())});
+    }
+
+    public Record selectLastRecord(){
+        Cursor cursor = database.rawQuery("SELECT * FROM " + table_name + " ORDER BY " + key_id + " DESC LIMIT 1", null);
+        if(!cursor.isAfterLast()){
+            return new Record(
+                    Integer.parseInt(cursor.getString(cursor.getColumnIndex(key_id))),
+                    cursor.getString(cursor.getColumnIndex(key_name)),
+                    Integer.parseInt(cursor.getString(cursor.getColumnIndex(key_duration))),
+                    cursor.getString(cursor.getColumnIndex(key_date))
+            );
+        }
+        return null;
     }
 
 }
