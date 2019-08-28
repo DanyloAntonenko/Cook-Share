@@ -1,10 +1,13 @@
 package com.example.dictaphone;
 
+import android.annotation.SuppressLint;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +21,10 @@ public class MainActivity extends AppCompatActivity {
 
     private FragmentPagerAdapter fragment_pager_adapter;
     public final List<Fragment> fragments_list = new ArrayList<>();
-    private ViewPager view_pager;
+    public static CustomViewPager view_pager;
 
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+
 
         view_pager = findViewById(R.id.pager);
         view_pager.setAdapter(fragment_pager_adapter);

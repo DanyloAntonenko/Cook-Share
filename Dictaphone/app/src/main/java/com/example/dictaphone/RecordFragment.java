@@ -63,14 +63,13 @@ public class RecordFragment extends Fragment {
     //////////////////////////////////////////////////////////
     private Timer timer;
     private MyTymer myTymer;
-    private MediaRecorder media_recorder;
+    public MediaRecorder media_recorder;
     private MediaPlayer media_player;
 
     String file_name; File storage_dir;
     private short flag = 0;
 
     String[] audio_parts;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -145,6 +144,8 @@ public class RecordFragment extends Fragment {
                 startAnimation();
                 showControlButtons();
                 hideRecordButton();
+
+                MainActivity.view_pager.disableScroll(true);
             }
         });
 
@@ -185,6 +186,8 @@ public class RecordFragment extends Fragment {
                     deleteTemporaryFiles();
                 }
                 audio_parts = null;
+
+                MainActivity.view_pager.disableScroll(false);
             }
         });
 
@@ -206,6 +209,8 @@ public class RecordFragment extends Fragment {
                 renameFile();
 
                 audio_parts = null;
+
+                MainActivity.view_pager.disableScroll(false);
             }
         });
 
