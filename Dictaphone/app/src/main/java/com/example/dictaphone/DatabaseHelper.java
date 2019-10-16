@@ -81,6 +81,7 @@ public class DatabaseHelper {
 
     public Record selectLastRecord(){
         Cursor cursor = database.rawQuery("SELECT * FROM " + table_name + " ORDER BY " + key_id + " DESC LIMIT 1", null);
+        cursor.moveToFirst();
         if(!cursor.isAfterLast()){
             return new Record(
                     Integer.parseInt(cursor.getString(cursor.getColumnIndex(key_id))),

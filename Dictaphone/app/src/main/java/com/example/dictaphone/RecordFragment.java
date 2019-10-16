@@ -1,7 +1,7 @@
 package com.example.dictaphone;
 
 import android.content.Context;
-import android.media.MediaPlayer;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaRecorder;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -17,8 +17,6 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,13 +31,15 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static com.example.dictaphone.ShowRecordsFragment.showNewRecord;
 
 public class RecordFragment extends Fragment {
 
@@ -49,25 +49,18 @@ public class RecordFragment extends Fragment {
     Button record_button,
             pause_button, stop_button, cancel_button;
     private TextView timer_text;
-    /////////////////////////////////////////////////////////
-    ListView list_of_records;
 
-    final String attribute_name = "name";
-    final String attribute_date = "date";
-    final String attribute_duration = "duration";
-
-    SimpleAdapter adapter;
-    ArrayList<Map<String, Object>> data;
-    Map<String, Object> m;
-    //////////////////////////////////////////////////////////
     private Timer timer;
     private MyTymer myTymer;
     public MediaRecorder media_recorder;
 
-    private String file_name; File storage_dir;
+    private String file_name;
+    public static File storage_dir;
     private short flag = 0;
 
     private String[] audio_parts;
+
+    DatabaseHelper database;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -91,7 +84,7 @@ public class RecordFragment extends Fragment {
         setVisibilities();
         registerForContext();
 
-        DatabaseHelper database = DatabaseHelper.getInstance(context);
+        database = DatabaseHelper.getInstance(context);
         database.open();
         database.close();
 
@@ -191,7 +184,7 @@ public class RecordFragment extends Fragment {
                 stopAnimation();
                 showRecordButton();
                 hideControlButtons();
-                renameFile();
+                showDialog();
 
                 audio_parts = null;
 
@@ -429,7 +422,7 @@ public class RecordFragment extends Fragment {
         }
     }
 
-    public void renameFile(){
+    public void showDialog(){
 
         View prompts = LayoutInflater.from(context).inflate(R.layout.enter_file_name_dialog_window, null);
 
@@ -450,7 +443,10 @@ public class RecordFragment extends Fragment {
             public void onClick(View v) {
                 if(!file_name.substring(1, file_name.length() - 5).equals(user_input.getText().toString()) && !user_input.getText().toString().isEmpty()) {
                     changeFileName(file_name, user_input.getText().toString());
+
                 }
+                addToDatabase();
+                showLastRecord();
                 dialog.dismiss();
             }
         });
@@ -475,10 +471,13 @@ public class RecordFragment extends Fragment {
                 if (from.exists()) {
                     if(!from.renameTo(to)){
                         Toast.makeText(context, "Error renaming file", Toast.LENGTH_LONG).show();
+                    } else {
+                        file_name = "/" + file_name_new + ".3gpp";//////////////////////////////////
                     }
                 } else {
                     throw new Exception("Temporary file does not exist");
                 }
+
             }
         }catch (Exception e){
             Toast.makeText(context, "Renaming file problem", Toast.LENGTH_LONG).show();
@@ -569,24 +568,36 @@ public class RecordFragment extends Fragment {
         }
     }
 
-    public void addRecordToList(Record record){
-        m = new HashMap<>();
-        m.put(attribute_name, record.getName());
-        m.put(attribute_date, record.getDate());
-        m.put(attribute_duration, getNormalDurationForm(record.getDuration()));
+    public void addToDatabase(){
+        try{
+            MediaMetadataRetriever metadata = new MediaMetadataRetriever();
+            metadata.setDataSource(storage_dir + file_name);
+            int duration = (int)((Long.parseLong(metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) % 60000) / 1000);
 
-        data.add(m);
+            SimpleDateFormat date = new SimpleDateFormat("dd.MM.yy");
 
-        adapter.notifyDataSetChanged();
+            database.open();
+            database.insertRecord(new Record(storage_dir + file_name, duration, date.format(new Date())));
+            database.close();
+
+            Toast.makeText(context, "SUCCASS", Toast.LENGTH_LONG).show();
+
+        }catch (Exception e){
+            Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
-    public String getNormalDurationForm(int duration){
-        int minutes = duration / 60,
-                seconds = duration % 60;
-        return ((minutes < 10) ? "0" + String.valueOf(minutes) : String.valueOf(minutes))
-                .concat(":")
-                .concat((seconds < 10) ? "0" +  String.valueOf(seconds) : String.valueOf(seconds));
+    public void showLastRecord(){
+
+            database.open();
+            Record record = database.selectLastRecord();
+            showNewRecord(record);
+            ShowRecordsFragment.records.add(record);
+            database.close();
+        //    Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+
     }
+
 
     class MyTymer extends TimerTask {
         int seconds = 0;
